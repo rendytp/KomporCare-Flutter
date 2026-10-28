@@ -33,6 +33,9 @@ class AuthService {
   final _storage = const FlutterSecureStorage();
   final ApiClient _api = ApiClient();
 
+  /// Client bersama (membawa token login) untuk service lain.
+  ApiClient get api => _api;
+
   AppUser? currentUser;
 
   Future<AppUser> login({

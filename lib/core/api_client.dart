@@ -24,20 +24,29 @@ class ApiClient {
 
   String? token;
 
-  Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body) async {
+  Map<String, String> get _headers => {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+  Uri _uri(String path, [Map<String, String>? query]) {
     final uri = Uri.parse('${AppConfig.apiBaseUrl}$path');
+    if (query == null || query.isEmpty) return uri;
+    return uri.replace(queryParameters: {...uri.queryParameters, ...query});
+  }
+
+  Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body) {
+    return _send(() => http.post(_uri(path), headers: _headers, body: jsonEncode(body)));
+  }
+
+  Future<Map<String, dynamic>> get(String path, {Map<String, String>? query}) {
+    return _send(() => http.get(_uri(path, query), headers: _headers));
+  }
+
+  Future<Map<String, dynamic>> _send(Future<http.Response> Function() request) async {
     try {
-      final res = await http
-          .post(
-            uri,
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-              if (token != null) 'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode(body),
-          )
-          .timeout(const Duration(seconds: 20));
+      final res = await request().timeout(const Duration(seconds: 20));
 
       Map<String, dynamic> json = {};
       if (res.body.isNotEmpty) {
@@ -60,7 +69,8 @@ class ApiClient {
         fieldErrors: fields,
       );
     } on SocketException {
-      throw ApiException('Tidak dapat terhubung ke server. Periksa koneksi Anda.');
+      throw ApiException(
+          'Tidak dapat terhubung ke ${AppConfig.apiBaseUrl}. Periksa koneksi atau alamat server.');
     } on TimeoutException {
       throw ApiException('Server tidak merespons. Coba lagi.');
     }
