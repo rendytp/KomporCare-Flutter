@@ -4,6 +4,7 @@ import 'core/theme.dart';
 import 'pages/auth/forgot_password_page.dart';
 import 'pages/auth/login_page.dart';
 import 'pages/auth/register_page.dart';
+import 'pages/auth/reset_password_page.dart';
 import 'pages/pelanggan/pelanggan_home_page.dart';
 import 'pages/teknisi/teknisi_home_page.dart';
 
@@ -26,6 +27,7 @@ class KomporCareApp extends StatelessWidget {
         '/login': (_) => const LoginPage(),
         '/forgot': (_) => const ForgotPasswordPage(),
         '/register': (_) => const RegisterPage(),
+        '/reset': (_) => const ResetPasswordPage(),
         // pelanggan
         '/pelanggan': (_) => const PelangganHomePage(),
         // teknisi

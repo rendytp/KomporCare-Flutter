@@ -31,6 +31,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       final msg = await AuthService.instance.forgotPassword(_identifier.text);
       if (!mounted) return;
       showSnack(context, msg);
+      Navigator.pushNamed(context, '/reset', arguments: _identifier.text.trim());
     } on ApiException catch (e) {
       if (mounted) showSnack(context, e.message, error: true);
     } finally {
@@ -106,7 +107,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                             ),
                             const SizedBox(height: 10),
                             const Text(
-                              'Petunjuk untuk mengatur ulang kata sandi akan dikirim melalui email atau WhatsApp sesuai data yang Anda masukkan.',
+                              'Kode pemulihan 6 digit akan dikirim ke email akun Anda.',
                               style: TextStyle(
                                   fontSize: 10.5,
                                   height: 1.4,

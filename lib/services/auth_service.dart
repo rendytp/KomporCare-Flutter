@@ -69,6 +69,21 @@ class AuthService {
     return (res['message'] as String?) ?? 'Instruksi pemulihan telah dikirim.';
   }
 
+  Future<String> resetPassword({
+    required String identifier,
+    required String code,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    final res = await _api.post('/auth/reset-password', {
+      'identifier': identifier.trim(),
+      'code': code.trim(),
+      'password': password,
+      'password_confirmation': passwordConfirmation,
+    });
+    return (res['message'] as String?) ?? 'Kata sandi berhasil diubah.';
+  }
+
   Future<void> logout() async {
     try {
       await _api.post('/auth/logout', {});
