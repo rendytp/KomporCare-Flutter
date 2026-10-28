@@ -40,6 +40,14 @@ class ApiClient {
     return _send(() => http.post(_uri(path), headers: _headers, body: jsonEncode(body)));
   }
 
+  Future<Map<String, dynamic>> put(String path, Map<String, dynamic> body) {
+    return _send(() => http.put(_uri(path), headers: _headers, body: jsonEncode(body)));
+  }
+
+  Future<Map<String, dynamic>> delete(String path) {
+    return _send(() => http.delete(_uri(path), headers: _headers));
+  }
+
   Future<Map<String, dynamic>> get(String path, {Map<String, String>? query}) {
     return _send(() => http.get(_uri(path, query), headers: _headers));
   }

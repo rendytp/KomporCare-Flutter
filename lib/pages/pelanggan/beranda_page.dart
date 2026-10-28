@@ -7,12 +7,17 @@ import '../../models/layanan.dart';
 import '../../services/customer_api.dart';
 import '../../widgets/common.dart';
 import 'cari_layanan_page.dart';
+import 'kelola_alamat_page.dart';
+import 'notifikasi_page.dart';
 
 /// Beranda Pelanggan (tab "Layanan"). Semua data dari API Laravel.
 class BerandaPage extends StatefulWidget {
-  const BerandaPage({super.key, required this.onOpenPesanan});
+  const BerandaPage({super.key, required this.onOpenPesanan, required this.refresh});
 
   final VoidCallback onOpenPesanan;
+
+  /// Dinaikkan oleh shell setiap tab Layanan dibuka, supaya alamat utama & notifikasi segar.
+  final ValueNotifier<int> refresh;
 
   @override
   State<BerandaPage> createState() => _BerandaPageState();
@@ -26,7 +31,26 @@ class _BerandaPageState extends State<BerandaPage> {
   @override
   void initState() {
     super.initState();
+    widget.refresh.addListener(_load);
     _load();
+  }
+
+  @override
+  void dispose() {
+    widget.refresh.removeListener(_load);
+    super.dispose();
+  }
+
+  Future<void> _openNotifications() async {
+    await Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const NotifikasiPage()));
+    if (mounted) _load(); // titik merah hilang setelah notifikasi dibaca
+  }
+
+  Future<void> _openAddresses() async {
+    await Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const KelolaAlamatPage()));
+    if (mounted) _load(); // lokasi di header mengikuti alamat utama terbaru
   }
 
   Future<void> _load() async {
@@ -69,7 +93,12 @@ class _BerandaPageState extends State<BerandaPage> {
         bottom: false,
         child: Column(
           children: [
-            _Header(address: _data?.address, unread: _data?.unread ?? 0),
+            _Header(
+              address: _data?.address,
+              unread: _data?.unread ?? 0,
+              onLocationTap: _openAddresses,
+              onBellTap: _openNotifications,
+            ),
             const _RoleBanner(),
             Expanded(child: _body()),
           ],
@@ -163,10 +192,17 @@ class _BerandaPageState extends State<BerandaPage> {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.address, required this.unread});
+  const _Header({
+    required this.address,
+    required this.unread,
+    required this.onLocationTap,
+    required this.onBellTap,
+  });
 
   final AddressInfo? address;
   final int unread;
+  final VoidCallback onLocationTap;
+  final VoidCallback onBellTap;
 
   @override
   Widget build(BuildContext context) {
@@ -195,7 +231,10 @@ class _Header extends StatelessWidget {
               Expanded(
                 child: Align(
                   alignment: Alignment.centerRight,
-                  child: Container(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: onLocationTap,
+                    child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
@@ -217,12 +256,13 @@ class _Header extends StatelessWidget {
                       ],
                     ),
                   ),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               InkWell(
                 borderRadius: BorderRadius.circular(18),
-                onTap: () => showSnack(context, 'Notifikasi akan segera hadir.'),
+                onTap: onBellTap,
                 child: Container(
                   width: 36,
                   height: 36,

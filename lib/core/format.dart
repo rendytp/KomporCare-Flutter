@@ -72,3 +72,58 @@ IconData serviceIcon(String name) {
   if (n.contains('pembersih')) return Icons.cleaning_services_outlined;
   return Icons.build_outlined;
 }
+
+const _hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+
+/// 9 -> "09"
+String two(int n) => n.toString().padLeft(2, '0');
+
+/// "10:00"
+String jamLabel(DateTime d) => '${two(d.hour)}:${two(d.minute)}';
+
+/// "Jumat, 16 Okt 2026"
+String tanggalLengkap(DateTime d) =>
+    '${_hari[d.weekday - 1]}, ${d.day} ${_bulan[d.month - 1]} ${d.year}';
+
+/// "Sabtu, 19 Sep 2026" -> dipakai juga pada pemisah tanggal chat.
+String tanggalChat(DateTime d) => tanggalLengkap(d);
+
+/// Waktu singkat untuk daftar percakapan: "08:31", "Kemarin", atau "12 Okt".
+String waktuSingkat(DateTime? d) {
+  if (d == null) return '';
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final day = DateTime(d.year, d.month, d.day);
+  final diff = today.difference(day).inDays;
+  if (diff == 0) return jamLabel(d);
+  if (diff == 1) return 'Kemarin';
+  return '${d.day} ${_bulan[d.month - 1]}';
+}
+
+bool sameDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
+
+/// "Sari Wijaya" -> "SW"
+String initials(String name) {
+  final parts = name.trim().split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
+  if (parts.isEmpty) return '?';
+  if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+  return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
+}
+
+String paymentStatusLabel(String? status) {
+  switch (status) {
+    case 'paid':
+      return 'Lunas';
+    case 'pending':
+      return 'Belum dibayar';
+    case 'expired':
+      return 'Kedaluwarsa';
+    case 'failed':
+      return 'Gagal';
+    case 'refunded':
+      return 'Dana dikembalikan';
+    default:
+      return '-';
+  }
+}
