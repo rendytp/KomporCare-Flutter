@@ -10,6 +10,9 @@ import '../../widgets/page_parts.dart';
 import 'cari_layanan_page.dart';
 import 'chat_page.dart';
 import 'notifikasi_page.dart';
+import 'pembayaran_page.dart';
+import 'tracking_page.dart';
+import 'ulasan_page.dart';
 
 enum _Filter { semua, aktif, riwayat }
 
@@ -86,6 +89,21 @@ class _PesananPageState extends State<PesananPage> {
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => CariLayananPage(initialQuery: o.serviceName),
     ));
+  }
+
+  Future<void> _track(CustomerOrder o) async {
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => o.canPay
+          ? PembayaranPage(orderCode: o.orderCode)
+          : TrackingPage(orderCode: o.orderCode),
+    ));
+    if (mounted) _load();
+  }
+
+  Future<void> _review(CustomerOrder o) async {
+    await Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => UlasanPage(orderCode: o.orderCode)));
+    if (mounted) _load();
   }
 
   void _detail(CustomerOrder o) {
@@ -165,7 +183,7 @@ class _PesananPageState extends State<PesananPage> {
                 _ActiveCard(
                   order: o,
                   openingChat: _openingChat == o.orderCode,
-                  onTrack: () => _detail(o),
+                  onTrack: () => _track(o),
                   onChat: () => _chatTeknisi(o),
                 ),
                 const SizedBox(height: 10),
@@ -183,6 +201,7 @@ class _PesananPageState extends State<PesananPage> {
                   order: o,
                   onDetail: () => _detail(o),
                   onReorder: () => _pesanLagi(o),
+                  onReview: o.canReview ? () => _review(o) : null,
                 ),
                 const SizedBox(height: 10),
               ],
@@ -329,7 +348,9 @@ class _ActiveCard extends StatelessWidget {
             children: [
               Expanded(
                 child: SmallButton(
-                    label: 'Lacak pesanan', icon: Icons.near_me_outlined, onPressed: onTrack),
+                    label: order.canPay ? 'Bayar sekarang' : 'Lacak pesanan',
+                    icon: order.canPay ? Icons.payments_outlined : Icons.near_me_outlined,
+                    onPressed: onTrack),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -349,11 +370,17 @@ class _ActiveCard extends StatelessWidget {
 }
 
 class _HistoryCard extends StatelessWidget {
-  const _HistoryCard({required this.order, required this.onDetail, required this.onReorder});
+  const _HistoryCard({
+    required this.order,
+    required this.onDetail,
+    required this.onReorder,
+    this.onReview,
+  });
 
   final CustomerOrder order;
   final VoidCallback onDetail;
   final VoidCallback onReorder;
+  final VoidCallback? onReview;
 
   @override
   Widget build(BuildContext context) {
@@ -404,6 +431,15 @@ class _HistoryCard extends StatelessWidget {
                     style: const TextStyle(
                         fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.green)),
               ),
+              if (onReview != null) ...[
+                const SizedBox(width: 14),
+                GestureDetector(
+                  onTap: onReview,
+                  child: const Text('Beri ulasan',
+                      style: TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.green)),
+                ),
+              ],
               if (done) ...[
                 const SizedBox(width: 14),
                 GestureDetector(

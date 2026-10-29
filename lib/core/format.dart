@@ -44,7 +44,7 @@ String orderStatusLabel(String status) {
     case 'accepted':
       return 'Terjadwal';
     case 'on_the_way':
-      return 'Teknisi berangkat';
+      return 'Dalam perjalanan';
     case 'in_progress':
       return 'Sedang dikerjakan';
     case 'completed':

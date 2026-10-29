@@ -1,5 +1,7 @@
 import '../core/api_client.dart';
+import '../core/format.dart';
 import '../models/akun.dart';
+import '../models/alur_servis.dart';
 import '../models/chat.dart';
 import '../models/layanan.dart';
 import '../models/pesanan.dart';
@@ -59,6 +61,56 @@ class PelangganApi {
   Future<ChatMessage> sendMessage(int id, String body) async {
     final res = await _api.post('/customer/conversations/$id/messages', {'body': body});
     return ChatMessage.fromJson(res['message'] as Map<String, dynamic>);
+  }
+
+  // ---- Pemesanan, pencocokan teknisi, pelacakan ----
+  Future<MatchResult> createOrder({
+    required int serviceId,
+    required int addressId,
+    DateTime? scheduledAt,
+    String? note,
+  }) async {
+    final res = await _api.post('/customer/orders', {
+      'service_id': serviceId,
+      'address_id': addressId,
+      if (scheduledAt != null)
+        'scheduled_at':
+            '${scheduledAt.year}-${two(scheduledAt.month)}-${two(scheduledAt.day)} ${two(scheduledAt.hour)}:${two(scheduledAt.minute)}:00',
+      if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+    });
+    return MatchResult.fromJson(res);
+  }
+
+  Future<MatchResult> rematch(String code) async =>
+      MatchResult.fromJson(await _api.post('/customer/orders/$code/match', {}));
+
+  Future<void> cancelOrder(String code, {String? reason}) async {
+    await _api.post('/customer/orders/$code/cancel', {if (reason != null) 'reason': reason});
+  }
+
+  Future<TrackingData> tracking(String code) async =>
+      TrackingData.fromJson(await _api.get('/customer/orders/$code/tracking'));
+
+  // ---- Pembayaran & ulasan ----
+  Future<PaymentInfo> paymentInfo(String code) async =>
+      PaymentInfo.fromJson(await _api.get('/customer/orders/$code/payment'));
+
+  /// method: 'cash' | 'qris'. Mengembalikan true bila pesanan langsung selesai (QRIS).
+  Future<({String message, bool completed})> pay(String code, String method) async {
+    final res = await _api.post('/customer/orders/$code/pay', {'method': method});
+    return (message: (res['message'] as String?) ?? '', completed: res['completed'] == true);
+  }
+
+  Future<ReviewInfo> reviewInfo(String code) async =>
+      ReviewInfo.fromJson(await _api.get('/customer/orders/$code/review'));
+
+  Future<void> submitReview(String code,
+      {required int rating, required List<String> tags, String? comment}) async {
+    await _api.post('/customer/orders/$code/review', {
+      'rating': rating,
+      'tags': tags,
+      if (comment != null && comment.trim().isNotEmpty) 'comment': comment.trim(),
+    });
   }
 
   // ---- Akun ----

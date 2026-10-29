@@ -37,6 +37,8 @@ class CustomerOrder {
     this.paymentType,
     this.paymentStatus,
     this.cancelReason,
+    this.canPay = false,
+    this.canReview = false,
   });
 
   final String orderCode;
@@ -58,6 +60,8 @@ class CustomerOrder {
   final String? paymentType;
   final String? paymentStatus;
   final String? cancelReason;
+  final bool canPay;
+  final bool canReview;
 
   bool get isActive => const [
         'waiting_payment',
@@ -92,6 +96,8 @@ class CustomerOrder {
         paymentType: j['payment_type'] as String?,
         paymentStatus: j['payment_status'] as String?,
         cancelReason: j['cancel_reason'] as String?,
+        canPay: j['can_pay'] == true,
+        canReview: j['can_review'] == true,
       );
 }
 

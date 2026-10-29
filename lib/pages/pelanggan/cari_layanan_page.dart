@@ -8,6 +8,7 @@ import '../../core/theme.dart';
 import '../../models/layanan.dart';
 import '../../services/customer_api.dart';
 import '../../widgets/common.dart';
+import 'pesan_layanan_page.dart';
 
 /// Cari layanan: daftar layanan dari tabel `services`, filter per kategori
 /// (`service_categories`) dan pencarian teks.
@@ -80,7 +81,8 @@ class _CariLayananPageState extends State<CariLayananPage> {
   }
 
   void _order(ServiceItem s) {
-    showSnack(context, 'Pemesanan "${s.name}" akan tersedia di tahap berikutnya.');
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => PesanLayananPage(service: s)));
   }
 
   @override
