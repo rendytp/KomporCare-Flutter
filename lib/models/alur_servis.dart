@@ -286,3 +286,44 @@ class ReviewInfo {
     );
   }
 }
+
+/// Kode QRIS hasil pembuatan tagihan di gateway pembayaran.
+class QrisCharge {
+  QrisCharge({
+    required this.provider,
+    required this.sandbox,
+    required this.qrString,
+    required this.amount,
+    required this.secondsLeft,
+  });
+
+  final String provider; // midtrans | demo
+  final bool sandbox;
+  final String qrString;
+  final double amount;
+  final int secondsLeft;
+
+  bool get isDemo => provider == 'demo';
+
+  factory QrisCharge.fromJson(Map<String, dynamic> j) => QrisCharge(
+        provider: (j['provider'] as String?) ?? 'midtrans',
+        sandbox: j['sandbox'] == true,
+        qrString: j['qr_string'] as String,
+        amount: asDouble(j['amount']),
+        secondsLeft: asInt(j['seconds_left']),
+      );
+}
+
+class QrisStatus {
+  QrisStatus({required this.status, required this.orderStatus, required this.secondsLeft});
+
+  final String status; // pending | paid | expired | failed
+  final String orderStatus;
+  final int secondsLeft;
+
+  factory QrisStatus.fromJson(Map<String, dynamic> j) => QrisStatus(
+        status: j['status'] as String,
+        orderStatus: (j['order_status'] as String?) ?? '',
+        secondsLeft: asInt(j['seconds_left']),
+      );
+}

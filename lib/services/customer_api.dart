@@ -101,6 +101,13 @@ class PelangganApi {
     return (message: (res['message'] as String?) ?? '', completed: res['completed'] == true);
   }
 
+  /// Buat (atau ambil ulang) kode QRIS untuk pesanan lewat gateway pembayaran.
+  Future<QrisCharge> createQris(String code) async =>
+      QrisCharge.fromJson(await _api.post('/customer/orders/$code/qris', {}));
+
+  Future<QrisStatus> qrisStatus(String code) async =>
+      QrisStatus.fromJson(await _api.get('/customer/orders/$code/qris/status'));
+
   Future<ReviewInfo> reviewInfo(String code) async =>
       ReviewInfo.fromJson(await _api.get('/customer/orders/$code/review'));
 

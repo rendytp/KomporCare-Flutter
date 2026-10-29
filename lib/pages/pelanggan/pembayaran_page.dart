@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../core/api_client.dart';
 import '../../core/format.dart';
@@ -10,6 +9,7 @@ import '../../models/alur_servis.dart';
 import '../../services/customer_api.dart';
 import '../../widgets/common.dart';
 import '../../widgets/page_parts.dart';
+import 'qris_page.dart';
 import 'ulasan_page.dart';
 
 /// Pembayaran setelah servis selesai: Tunai (dikonfirmasi teknisi) atau QRIS (demo).
@@ -25,7 +25,7 @@ class PembayaranPage extends StatefulWidget {
 class _PembayaranPageState extends State<PembayaranPage> {
   PaymentInfo? _info;
   String? _error;
-  String _method = 'qris';
+  String _method = 'cash';
   bool _paying = false;
   bool _cashRequested = false;
   Timer? _poll;
@@ -66,24 +66,34 @@ class _PembayaranPageState extends State<PembayaranPage> {
     );
   }
 
+  /// Tunai: catat metode, lalu tunggu teknisi mengonfirmasi uang diterima.
   Future<void> _pay() async {
     setState(() => _paying = true);
     try {
-      final res = await PelangganApi.instance.pay(widget.orderCode, _method);
+      final res = await PelangganApi.instance.pay(widget.orderCode, 'cash');
       if (!mounted) return;
       showSnack(context, res.message);
-      if (res.completed) {
-        _goReview();
-      } else {
-        // Tunai: tunggu teknisi mengonfirmasi uang diterima.
-        setState(() => _cashRequested = true);
-        _poll?.cancel();
-        _poll = Timer.periodic(const Duration(seconds: 5), (_) => _load());
-      }
+      setState(() => _cashRequested = true);
+      _poll?.cancel();
+      _poll = Timer.periodic(const Duration(seconds: 5), (_) => _load());
     } on ApiException catch (e) {
       if (mounted) showSnack(context, e.message, error: true);
     } finally {
       if (mounted) setState(() => _paying = false);
+    }
+  }
+
+  /// QRIS: langsung pindah ke halaman QRIS (kode dari payment gateway).
+  Future<void> _openQris() async {
+    setState(() => _method = 'qris');
+    final paid = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => QrisPage(orderCode: widget.orderCode)),
+    );
+    if (!mounted) return;
+    if (paid == true) {
+      _goReview();
+    } else {
+      _load();
     }
   }
 
@@ -199,78 +209,14 @@ class _PembayaranPageState extends State<PembayaranPage> {
               child: _MethodTile(
                 icon: Icons.qr_code_2,
                 title: 'QRIS',
-                subtitle: 'Scan QRIS (demo)',
+                subtitle: 'Scan lewat e-wallet / m-banking',
                 selected: _method == 'qris',
-                onTap: locked || _cashRequested ? null : () => setState(() => _method = 'qris'),
+                onTap: locked || _cashRequested ? null : _openQris,
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        if (_method == 'qris')
-          FormCard(
-            child: Column(
-              children: [
-                const Row(
-                  children: [
-                    Expanded(
-                      child: Text('QRIS',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
-                    ),
-                    Pill('DEMO'),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('KomporCare • Contoh tagihan ${info.orderCode}',
-                      style: const TextStyle(fontSize: 10.5, color: AppColors.textMuted)),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Opacity(
-                        opacity: 0.35,
-                        child: QrImageView(
-                          data: info.qrString,
-                          size: 170,
-                          backgroundColor: Colors.white,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: AppColors.error,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Text('DEMO • TIDAK AKTIF',
-                            style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white)),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(rupiah(info.total),
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-                const SizedBox(height: 4),
-                const Text(
-                    'Kode QRIS ini hanya contoh dan tidak dapat dibayar lewat aplikasi bank atau e-wallet.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 10.5, height: 1.4, color: AppColors.textMuted)),
-              ],
-            ),
-          ),
         const SizedBox(height: 12),
         InfoBox(
           child: Text(
@@ -297,12 +243,18 @@ class _PembayaranPageState extends State<PembayaranPage> {
         else if (info.isPaid)
           PrimaryButton(label: 'Lihat ulasan', icon: Icons.star_outline, onPressed: _goReview)
         else
-          PrimaryButton(
-            label: _method == 'qris' ? 'Konfirmasi pembayaran demo' : 'Saya bayar tunai',
-            icon: Icons.check,
-            loading: _paying,
-            onPressed: locked ? null : _pay,
-          ),
+          (_method == 'qris'
+              ? PrimaryButton(
+                  label: 'Buka kode QRIS',
+                  icon: Icons.qr_code_2,
+                  onPressed: locked ? null : _openQris,
+                )
+              : PrimaryButton(
+                  label: 'Saya bayar tunai',
+                  icon: Icons.check,
+                  loading: _paying,
+                  onPressed: locked ? null : _pay,
+                )),
         if (locked && !info.isPaid && !_cashRequested)
           const Padding(
             padding: EdgeInsets.only(top: 10),
@@ -310,7 +262,7 @@ class _PembayaranPageState extends State<PembayaranPage> {
                 style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
           ),
         const DemoFooter(
-            'Pembayaran QRIS pada versi ini hanya simulasi dan tidak memindahkan uang.'),
+            'Pembayaran QRIS diproses lewat payment gateway. Tunai dikonfirmasi oleh teknisi.'),
       ],
     );
   }
